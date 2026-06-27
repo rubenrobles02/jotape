@@ -669,7 +669,7 @@ function resumeAC() { if (AC.state === 'suspended') AC.resume(); }
 document.addEventListener('click', resumeAC, { once: true });
 
 function sfxCorrect() {
-    [[440, 0], [554, .08], [659, .16]].forEach(([freq, delay]) => {
+    [[880, 0], [1108, .08], [1318, .16]].forEach(([freq, delay]) => {
         const o = AC.createOscillator();
         const g = AC.createGain();
         o.connect(g); g.connect(AC.destination);
