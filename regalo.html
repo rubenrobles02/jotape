@@ -494,6 +494,37 @@
             border-color: var(--gold);
         }
 
+        /* ── Start screen ── */
+        #startPage {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        #startPage img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
+            transform-origin: center;
+            transition: filter .2s;
+        }
+
+        #startPage:hover img {
+            filter: brightness(1.07);
+        }
+
+        /* Subtle vignette at the edges for polish */
+        .start-vignette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 55%, rgba(0,0,0,.35) 100%);
+            pointer-events: none;
+        }
+
         @media (prefers-reduced-motion: reduce) {
             * { animation: none !important; transition: none !important; }
         }
@@ -509,6 +540,12 @@
 <div class="blob b1"></div>
 <div class="blob b2"></div>
 <div class="blob b3"></div>
+
+<!-- START -->
+<div id="startPage" onclick="startGame()">
+    <img src="imageninicio.png" alt="Brawl Quiz">
+    <div class="start-vignette"></div>
+</div>
 
 <!-- QUIZ -->
 <div class="page" id="quizPage">
@@ -934,13 +971,32 @@ function copyCode() {
 /* ══════════════════════════════════════════
    INICIO
 ══════════════════════════════════════════ */
+showQuestion(0);
 gsap.set('#quizPage', { opacity: 0 });
 gsap.set('#qBody',    { opacity: 0, y: 14 });
 
-showQuestion(0);
+function startGame() {
+    resumeAC();
 
-gsap.to('#quizPage', { opacity: 1, duration: .6, delay: .3 });
-gsap.to('#qBody',    { opacity: 1, y: 0, duration: .5, delay: .55, ease: 'power2.out' });
+    // Pequeño sonido de inicio tipo "whoosh"
+    const o = AC.createOscillator();
+    const g = AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(200, AC.currentTime);
+    o.frequency.exponentialRampToValueAtTime(600, AC.currentTime + .25);
+    g.gain.setValueAtTime(.18, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, AC.currentTime + .3);
+    o.start(); o.stop(AC.currentTime + .31);
+
+    gsap.timeline()
+        .to('#startPage img', { scale: 1.06, duration: .15, ease: 'power2.in' })
+        .to('#startPage',     { opacity: 0,  duration: .3,  ease: 'power2.in',
+            onComplete: () => { document.getElementById('startPage').style.display = 'none'; }
+        })
+        .to('#quizPage', { opacity: 1, duration: .4 }, '-=.05')
+        .to('#qBody',    { opacity: 1, y: 0, duration: .5, ease: 'power2.out' }, '-=.2');
+}
 </script>
 </body>
 </html>
