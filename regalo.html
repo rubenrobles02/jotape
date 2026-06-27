@@ -635,6 +635,35 @@ const sndWrong     = new Audio('no-no-no-carl.mp3');
 const sndWinner    = new Audio('brawl-stars-winner-sound.mp3');
 const sndLegendary = new Audio('legendary-star-drop-brawl-stars.mp3');
 
+const sndBgMusic   = new Audio('katana_brawl_menu_01.ogg');
+sndBgMusic.loop    = true;
+sndBgMusic.volume  = 0;
+
+function fadeIn(audio, targetVol, duration) {
+    audio.volume = 0;
+    audio.play().catch(() => {});
+    const steps = 40;
+    const step_vol = targetVol / steps;
+    const interval = duration / steps;
+    let i = 0;
+    const t = setInterval(() => {
+        audio.volume = Math.min(targetVol, audio.volume + step_vol);
+        if (++i >= steps) clearInterval(t);
+    }, interval);
+}
+
+function fadeOut(audio, duration) {
+    const start = audio.volume;
+    const steps = 30;
+    const step_vol = start / steps;
+    const interval = duration / steps;
+    let i = 0;
+    const t = setInterval(() => {
+        audio.volume = Math.max(0, audio.volume - step_vol);
+        if (++i >= steps) { clearInterval(t); audio.pause(); audio.volume = start; }
+    }, interval);
+}
+
 const AC = new (window.AudioContext || window.webkitAudioContext)();
 function resumeAC() { if (AC.state === 'suspended') AC.resume(); }
 document.addEventListener('click', resumeAC, { once: true });
@@ -889,7 +918,9 @@ function afterFlip() {
     const btn   = document.getElementById('copyBtn');
     const instr = document.getElementById('instructions');
 
+    fadeOut(sndBgMusic, 600);
     sfxFlip();
+    setTimeout(() => fadeIn(sndBgMusic, 0.28, 1500), 10000);
 
     gsap.to(hint, {
         opacity: 0, duration: .2,
@@ -955,6 +986,7 @@ function startGame() {
 
     sndLoading.currentTime = 0;
     sndLoading.play().catch(() => {});
+    fadeIn(sndBgMusic, 0.28, 2000);
 
     gsap.timeline()
         .to('#startPage img', { scale: 1.06, duration: .15, ease: 'power2.in' })
