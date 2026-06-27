@@ -669,7 +669,8 @@ function resumeAC() { if (AC.state === 'suspended') AC.resume(); }
 document.addEventListener('click', resumeAC, { once: true });
 
 function sfxCorrect() {
-    [[880, 0], [1108, .08], [1318, .16]].forEach(([freq, delay]) => {
+    const base = 440 * Math.pow(1.22, current); // sube ~22% por pregunta: Q1≈440Hz → Q7≈1400Hz
+    [[base, 0], [base * 1.26, .08], [base * 1.5, .16]].forEach(([freq, delay]) => {
         const o = AC.createOscillator();
         const g = AC.createGain();
         o.connect(g); g.connect(AC.destination);
