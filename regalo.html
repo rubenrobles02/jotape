@@ -501,7 +501,10 @@
 </head>
 <body>
 
-<script>const CODIGO = 'XXX';</script>
+<script>
+    const _p = new URLSearchParams(window.location.search);
+    const CODIGO = _p.get('c') || 'XXX';
+</script>
 
 <div class="blob b1"></div>
 <div class="blob b2"></div>
