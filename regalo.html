@@ -500,15 +500,20 @@
             inset: 0;
             z-index: 20;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
         }
 
         #startPage img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center top;
+            width: auto;
+            height: auto;
+            max-width: min(480px, 88vw);
+            max-height: 78vh;
+            object-fit: contain;
             display: block;
+            border-radius: 16px;
             transform-origin: center;
             transition: filter .2s;
         }
@@ -623,15 +628,18 @@
 <script>
 
 /* ══════════════════════════════════════════
-   SONIDOS (Web Audio API — sin archivos externos)
+   SONIDOS
 ══════════════════════════════════════════ */
-const AC = new (window.AudioContext || window.webkitAudioContext)();
+const sndLoading   = new Audio('brawl-stars-loading-sound.mp3');
+const sndWrong     = new Audio('no-no-no-carl.mp3');
+const sndWinner    = new Audio('brawl-stars-winner-sound.mp3');
+const sndLegendary = new Audio('legendary-star-drop-brawl-stars.mp3');
 
+const AC = new (window.AudioContext || window.webkitAudioContext)();
 function resumeAC() { if (AC.state === 'suspended') AC.resume(); }
 document.addEventListener('click', resumeAC, { once: true });
 
 function sfxCorrect() {
-    // Acorde ascendente — "ding" agradable
     [[440, 0], [554, .08], [659, .16]].forEach(([freq, delay]) => {
         const o = AC.createOscillator();
         const g = AC.createGain();
@@ -648,48 +656,13 @@ function sfxCorrect() {
 }
 
 function sfxWrong() {
-    // Tono descendente corto
-    const o = AC.createOscillator();
-    const g = AC.createGain();
-    o.connect(g); g.connect(AC.destination);
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(320, AC.currentTime);
-    o.frequency.exponentialRampToValueAtTime(140, AC.currentTime + .25);
-    g.gain.setValueAtTime(.15, AC.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001, AC.currentTime + .3);
-    o.start();
-    o.stop(AC.currentTime + .31);
+    sndWrong.currentTime = 0;
+    sndWrong.play().catch(() => {});
 }
 
 function sfxFlip() {
-    // Golpe profundo + shimmer épico
-    // Sub-bass thud
-    const thud = AC.createOscillator();
-    const thudG = AC.createGain();
-    thud.connect(thudG); thudG.connect(AC.destination);
-    thud.type = 'sine';
-    thud.frequency.setValueAtTime(90, AC.currentTime);
-    thud.frequency.exponentialRampToValueAtTime(30, AC.currentTime + .4);
-    thudG.gain.setValueAtTime(0, AC.currentTime);
-    thudG.gain.linearRampToValueAtTime(.7, AC.currentTime + .01);
-    thudG.gain.exponentialRampToValueAtTime(.001, AC.currentTime + .5);
-    thud.start();
-    thud.stop(AC.currentTime + .51);
-
-    // Shimmer — acorde de fanfarria
-    [[523, 0, .18], [659, .05, .2], [784, .1, .22], [1046, .18, .28]].forEach(([freq, delay, dur]) => {
-        const o = AC.createOscillator();
-        const g = AC.createGain();
-        o.connect(g); g.connect(AC.destination);
-        o.type = 'sine';
-        o.frequency.value = freq;
-        const t = AC.currentTime + delay;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(.12, t + .03);
-        g.gain.exponentialRampToValueAtTime(.001, t + dur);
-        o.start(t);
-        o.stop(t + dur + .01);
-    });
+    sndLegendary.currentTime = 0;
+    sndLegendary.play().catch(() => {});
 }
 
 /* ══════════════════════════════════════════
@@ -834,6 +807,8 @@ function answer(btn, chosen, correct) {
 document.getElementById('codeEl').textContent = CODIGO;
 
 function triggerReveal() {
+    sndWinner.currentTime = 0;
+    sndWinner.play().catch(() => {});
     const revealPage = document.getElementById('revealPage');
     const card       = document.getElementById('card');
     const action     = document.getElementById('action');
@@ -978,16 +953,8 @@ gsap.set('#qBody',    { opacity: 0, y: 14 });
 function startGame() {
     resumeAC();
 
-    // Pequeño sonido de inicio tipo "whoosh"
-    const o = AC.createOscillator();
-    const g = AC.createGain();
-    o.connect(g); g.connect(AC.destination);
-    o.type = 'sine';
-    o.frequency.setValueAtTime(200, AC.currentTime);
-    o.frequency.exponentialRampToValueAtTime(600, AC.currentTime + .25);
-    g.gain.setValueAtTime(.18, AC.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001, AC.currentTime + .3);
-    o.start(); o.stop(AC.currentTime + .31);
+    sndLoading.currentTime = 0;
+    sndLoading.play().catch(() => {});
 
     gsap.timeline()
         .to('#startPage img', { scale: 1.06, duration: .15, ease: 'power2.in' })
