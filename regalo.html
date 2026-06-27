@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Jotape</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Space+Mono:wght@700&family=Nunito:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg:       #09070F;
+            --gold:     #C9A84C;
+            --gold-lt:  #DFC078;
+            --text:     #EDE6D9;
+            --muted:    rgba(237,230,217,0.32);
+            --border:   rgba(201,168,76,0.22);
+            --surface:  rgba(255,255,255,0.045);
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden;
+        }
+
+        /* ── Fondo vivo ── */
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .b1 {
+            width: 55vw; height: 55vw;
+            background: rgba(201,168,76,.07);
+            top: -15%; left: -15%;
+            animation: drift1 18s ease-in-out infinite alternate;
+        }
+
+        .b2 {
+            width: 45vw; height: 45vw;
+            background: rgba(90,50,160,.07);
+            bottom: -15%; right: -12%;
+            animation: drift2 22s ease-in-out infinite alternate;
+        }
+
+        .b3 {
+            width: 30vw; height: 30vw;
+            background: rgba(60,120,180,.05);
+            top: 40%; left: 55%;
+            animation: drift3 15s ease-in-out infinite alternate;
+        }
+
+        @keyframes drift1 { to { transform: translate(8%, 10%) scale(1.12); } }
+        @keyframes drift2 { to { transform: translate(-6%, -8%) scale(1.1);  } }
+        @keyframes drift3 { to { transform: translate(-12%, 8%) scale(1.08); } }
+
+        .page {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 1;
+        }
+
+        /* ════════════════════════════════
+           QUIZ
+        ════════════════════════════════ */
+        .quiz-wrap {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            /* Subtle card feel */
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(201,168,76,.14);
+            border-radius: 20px;
+            padding: clamp(1.5rem, 5vw, 2.5rem);
+            box-shadow: inset 0 0 60px rgba(0,0,0,.2);
+        }
+
+        /* Thin gold line that pulses at top of card */
+        .quiz-wrap::before {
+            content: '';
+            display: block;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            border-radius: 2px;
+            opacity: .5;
+            animation: lineBreath 3s ease-in-out infinite;
+        }
+
+        @keyframes lineBreath {
+            0%,100% { opacity: .3; }
+            50%      { opacity: .7; }
+        }
+
+        .quiz-head {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: .7rem;
+        }
+
+        .q-counter {
+            font-size: .58rem;
+            font-weight: 700;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .dots {
+            display: flex;
+            gap: .5rem;
+        }
+
+        .dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: rgba(201,168,76,.16);
+            transition: background .4s;
+        }
+
+        .dot.done { background: var(--gold); }
+
+        /* Question */
+        .q-body { display: flex; flex-direction: column; gap: 1.6rem; }
+
+        #qText {
+            font-family: 'Lilita One', cursive;
+            font-size: clamp(1.1rem, 4vw, 1.45rem);
+            line-height: 1.4;
+            text-align: center;
+            color: var(--text);
+            min-height: 3em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .opts { display: flex; flex-direction: column; gap: .6rem; }
+
+        .opt {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: .9rem;
+            padding: .8rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background .15s, border-color .15s, transform .1s;
+            text-align: left;
+        }
+
+        .opt:hover:not(:disabled) {
+            background: rgba(201,168,76,.08);
+            border-color: rgba(201,168,76,.45);
+            transform: translateX(3px);
+        }
+
+        .opt:disabled { cursor: default; transform: none !important; }
+
+        .opt-letter {
+            font-family: 'Space Mono', monospace;
+            font-size: .68rem;
+            font-weight: 700;
+            color: var(--gold);
+            width: 16px;
+            flex-shrink: 0;
+            transition: color .2s;
+        }
+
+        .opt-text {
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--text);
+            transition: color .2s;
+        }
+
+        /* Correct */
+        .opt.correct {
+            background: rgba(100,190,130,.1);
+            border-color: rgba(100,190,130,.5);
+        }
+        .opt.correct .opt-letter,
+        .opt.correct .opt-text { color: #8BD4A4; }
+
+        /* Wrong → amarillo */
+        .opt.wrong {
+            background: rgba(210,175,30,.12);
+            border-color: rgba(210,175,30,.55);
+        }
+        .opt.wrong .opt-letter,
+        .opt.wrong .opt-text { color: #D4B020; }
+
+        /* ════════════════════════════════
+           CARD REVEAL
+        ════════════════════════════════ */
+        #revealPage {
+            opacity: 0;
+            pointer-events: none;
+            justify-content: flex-start;
+            align-items: stretch;
+            overflow-y: auto;
+            padding: 0;
+        }
+        #revealPage.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .reveal-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: clamp(2rem, 7vh, 3.5rem) 1.5rem 3rem;
+            min-height: 100%;
+        }
+
+        .para-label {
+            font-size: .58rem;
+            font-weight: 700;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 1.4rem;
+        }
+
+        .scene {
+            --w: min(260px, 70vw, 48vh);
+            width: var(--w);
+            height: calc(var(--w) * 1.42);
+            perspective: 1100px;
+        }
+
+        .card {
+            width: 100%; height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .face {
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        /* Back */
+        .back {
+            background: #1B1628;
+            border: 1.5px solid var(--border);
+            box-shadow: 0 2px 0 rgba(0,0,0,.6), 0 24px 70px rgba(0,0,0,.65), inset 0 0 0 10px rgba(201,168,76,.04);
+            overflow: hidden;
+        }
+
+        .back::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background-image:
+                repeating-linear-gradient( 45deg, rgba(201,168,76,.07) 0, rgba(201,168,76,.07) 1px, transparent 1px, transparent 10px),
+                repeating-linear-gradient(-45deg, rgba(201,168,76,.07) 0, rgba(201,168,76,.07) 1px, transparent 1px, transparent 10px);
+        }
+
+        .back-mark {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: .9rem;
+        }
+
+        .mark-gem {
+            width: 28px; height: 28px;
+            background: var(--gold);
+            opacity: .38;
+            transform: rotate(45deg);
+        }
+
+        .mark-name {
+            font-size: .55rem;
+            font-weight: 700;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: rgba(201,168,76,.38);
+        }
+
+        /* Front */
+        .front {
+            background: linear-gradient(160deg, #1A1432 0%, #0F0B1C 55%, #1A1432 100%);
+            border: 1.5px solid rgba(201,168,76,.38);
+            box-shadow: 0 24px 70px rgba(0,0,0,.65), inset 0 0 0 7px rgba(201,168,76,.03);
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: clamp(1.2rem, 5vw, 1.8rem) clamp(1rem, 4vw, 1.5rem);
+        }
+
+        .front-top { text-align: center; width: 100%; }
+
+        .card-eyebrow {
+            font-size: .52rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(201,168,76,.5);
+            margin-bottom: .5rem;
+        }
+
+        .card-name {
+            font-family: 'Lilita One', cursive;
+            font-size: clamp(1.9rem, 9vw, 2.5rem);
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(201,168,76,.5), transparent);
+        }
+
+        .code-block { text-align: center; width: 100%; }
+
+        .code-eyebrow {
+            font-size: .5rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(201,168,76,.5);
+            margin-bottom: .7rem;
+        }
+
+        .code-value {
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: clamp(1rem, 4.2vw, 1.35rem);
+            color: var(--gold-lt);
+            letter-spacing: 4px;
+            line-height: 1.6;
+            word-break: break-all;
+        }
+
+        .front-bottom { text-align: center; width: 100%; }
+
+        .from-text {
+            font-size: .56rem;
+            font-style: italic;
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .action {
+            margin-top: 1.8rem;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hint {
+            font-size: .6rem;
+            font-weight: 700;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .copy-btn {
+            display: none;
+            padding: .6rem 2rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--gold);
+            font-family: 'Nunito', sans-serif;
+            font-size: .7rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background .2s, border-color .2s, color .2s;
+        }
+
+        .copy-btn:hover { background: rgba(201,168,76,.08); border-color: var(--gold); }
+        .copy-btn.done  { color: #8BCFA0; border-color: rgba(139,207,160,.35); }
+
+        /* ── Instrucciones ── */
+        .instructions {
+            width: 100%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.1rem;
+            margin-top: 2rem;
+        }
+
+        .instr-sep {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(201,168,76,.22), transparent);
+        }
+
+        .instr-title {
+            font-size: .58rem;
+            font-weight: 700;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .steps {
+            list-style: none;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: .65rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: .8rem;
+        }
+
+        .step-num {
+            font-family: 'Space Mono', monospace;
+            font-size: .62rem;
+            font-weight: 700;
+            color: var(--gold);
+            flex-shrink: 0;
+            width: 16px;
+            padding-top: .1rem;
+        }
+
+        .step-text {
+            font-size: .82rem;
+            font-weight: 700;
+            color: rgba(237,230,217,.6);
+            line-height: 1.4;
+        }
+
+        .step-text strong { color: var(--text); }
+
+        .store-img {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(201,168,76,.18);
+            opacity: .82;
+            display: block;
+        }
+
+        .store-btn {
+            display: block;
+            width: 100%;
+            padding: .75rem;
+            background: transparent;
+            border: 1px solid rgba(201,168,76,.28);
+            border-radius: 8px;
+            color: var(--gold);
+            font-family: 'Nunito', sans-serif;
+            font-size: .7rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-align: center;
+            text-decoration: none;
+            transition: background .2s, border-color .2s;
+        }
+
+        .store-btn:hover {
+            background: rgba(201,168,76,.08);
+            border-color: var(--gold);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<script>const CODIGO = 'XXX';</script>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<!-- QUIZ -->
+<div class="page" id="quizPage">
+    <div class="quiz-wrap">
+        <div class="quiz-head">
+            <span class="q-counter" id="qCounter"></span>
+            <div class="dots" id="dots"></div>
+        </div>
+        <div class="q-body" id="qBody">
+            <h2 id="qText"></h2>
+            <div class="opts" id="opts"></div>
+        </div>
+    </div>
+</div>
+
+<!-- REVEAL -->
+<div class="page" id="revealPage">
+<div class="reveal-inner">
+    <p class="para-label">para</p>
+    <div class="scene">
+        <div class="card" id="card" onclick="flipCard()">
+            <div class="face back">
+                <div class="back-mark">
+                    <div class="mark-gem"></div>
+                    <span class="mark-name">Brawl Stars</span>
+                </div>
+            </div>
+            <div class="face front">
+                <div class="front-top">
+                    <p class="card-eyebrow">regalo especial</p>
+                    <h1 class="card-name">Jotape</h1>
+                </div>
+                <div class="divider"></div>
+                <div class="code-block">
+                    <p class="code-eyebrow">código de canje</p>
+                    <div class="code-value" id="codeEl"></div>
+                </div>
+                <div class="divider"></div>
+                <div class="front-bottom">
+                    <p class="from-text">de tu Duo Dinámico</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="action" id="action">
+        <span class="hint" id="hint">toca para abrir</span>
+        <button class="copy-btn" id="copyBtn" onclick="copyCode()">Copiar código</button>
+    </div>
+
+    <div class="instructions" id="instructions" style="opacity:0;pointer-events:none">
+        <div class="instr-sep"></div>
+        <p class="instr-title">Cómo canjearlo</p>
+        <ol class="steps">
+            <li class="step">
+                <span class="step-num">1</span>
+                <span class="step-text">Abre la tienda e inicia sesión con tu <strong>Supercell ID</strong></span>
+            </li>
+            <li class="step">
+                <span class="step-num">2</span>
+                <span class="step-text">Baja hasta el <strong>final de la página</strong></span>
+            </li>
+            <li class="step">
+                <span class="step-num">3</span>
+                <span class="step-text">Introduce el código en el campo y pulsa <strong>Enviar</strong></span>
+            </li>
+        </ol>
+        <img src="captura.png" alt="Dónde introducir el código" class="store-img">
+        <a href="https://store.supercell.com/es/brawlstars" target="_blank" class="store-btn">Ir a la tienda</a>
+    </div>
+</div><!-- /reveal-inner -->
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script>
+
+/* ══════════════════════════════════════════
+   SONIDOS (Web Audio API — sin archivos externos)
+══════════════════════════════════════════ */
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+
+function resumeAC() { if (AC.state === 'suspended') AC.resume(); }
+document.addEventListener('click', resumeAC, { once: true });
+
+function sfxCorrect() {
+    // Acorde ascendente — "ding" agradable
+    [[440, 0], [554, .08], [659, .16]].forEach(([freq, delay]) => {
+        const o = AC.createOscillator();
+        const g = AC.createGain();
+        o.connect(g); g.connect(AC.destination);
+        o.type = 'sine';
+        o.frequency.value = freq;
+        const t = AC.currentTime + delay;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(.22, t + .02);
+        g.gain.exponentialRampToValueAtTime(.001, t + .35);
+        o.start(t);
+        o.stop(t + .36);
+    });
+}
+
+function sfxWrong() {
+    // Tono descendente corto
+    const o = AC.createOscillator();
+    const g = AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(320, AC.currentTime);
+    o.frequency.exponentialRampToValueAtTime(140, AC.currentTime + .25);
+    g.gain.setValueAtTime(.15, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, AC.currentTime + .3);
+    o.start();
+    o.stop(AC.currentTime + .31);
+}
+
+function sfxFlip() {
+    // Golpe profundo + shimmer épico
+    // Sub-bass thud
+    const thud = AC.createOscillator();
+    const thudG = AC.createGain();
+    thud.connect(thudG); thudG.connect(AC.destination);
+    thud.type = 'sine';
+    thud.frequency.setValueAtTime(90, AC.currentTime);
+    thud.frequency.exponentialRampToValueAtTime(30, AC.currentTime + .4);
+    thudG.gain.setValueAtTime(0, AC.currentTime);
+    thudG.gain.linearRampToValueAtTime(.7, AC.currentTime + .01);
+    thudG.gain.exponentialRampToValueAtTime(.001, AC.currentTime + .5);
+    thud.start();
+    thud.stop(AC.currentTime + .51);
+
+    // Shimmer — acorde de fanfarria
+    [[523, 0, .18], [659, .05, .2], [784, .1, .22], [1046, .18, .28]].forEach(([freq, delay, dur]) => {
+        const o = AC.createOscillator();
+        const g = AC.createGain();
+        o.connect(g); g.connect(AC.destination);
+        o.type = 'sine';
+        o.frequency.value = freq;
+        const t = AC.currentTime + delay;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(.12, t + .03);
+        g.gain.exponentialRampToValueAtTime(.001, t + dur);
+        o.start(t);
+        o.stop(t + dur + .01);
+    });
+}
+
+/* ══════════════════════════════════════════
+   PREGUNTAS
+══════════════════════════════════════════ */
+const QUESTIONS = [
+    {
+        q:    '¿Cuál fue el primer personaje de Brawl Stars?',
+        opts: ['Colt', 'El Primo', 'Shelly', 'Bull'],
+        ok:    2
+    },
+    {
+        q:    '¿Qué modo de juego dominamos?',
+        opts: ['Gem Grab', 'Balón Brawl', 'Showdown', 'Atraco'],
+        ok:    1
+    },
+    {
+        q:    '¿Qué modo de juego nos encanta irónicamente?',
+        opts: ['Zona Caliente', 'Knockout', 'Caza Estelar', 'Supervivencia Dúo'],
+        ok:    2
+    },
+    {
+        q:    '¿Cuál es nuestro mejor dúo hasta la fecha?',
+        opts: ['Spike y Leon', 'Sandy y Amber', 'Buzz y Brock', 'Damian y Dough'],
+        ok:    3
+    },
+    {
+        q:    '¿Con qué vamos siempre?',
+        opts: ['Con estrategia', 'Con sigilo', 'Con la suya', '¡Con todo!'],
+        ok:    3
+    },
+    {
+        q:    '¿Cuál es el mejor equipo de la Brawl Championship?',
+        opts: ['Team Queso', 'Las Crazy Ratches', 'INTZ', 'Tribe Gaming'],
+        ok:    1
+    },
+    {
+        q:    '¿Y nosotros somos el dúo...?',
+        opts: ['Legendario', 'Imparable', '¡Dinámico!', 'Definitivo'],
+        ok:    2
+    },
+];
+
+const LABELS = ['A', 'B', 'C', 'D'];
+let current = 0;
+let locked  = false;
+
+/* Build dots */
+const dotsEl = document.getElementById('dots');
+QUESTIONS.forEach(() => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    dotsEl.appendChild(d);
+});
+
+function updateDots(justCompleted) {
+    const dotEls = dotsEl.querySelectorAll('.dot');
+    dotEls.forEach((d, i) => d.classList.toggle('done', i < current));
+    if (justCompleted !== undefined) {
+        const d = dotEls[justCompleted];
+        gsap.fromTo(d, { scale: 2 }, { scale: 1, duration: .4, ease: 'back.out(2.5)' });
+    }
+}
+
+function showQuestion(idx) {
+    const q = QUESTIONS[idx];
+    document.getElementById('qCounter').textContent = `pregunta ${idx + 1} de ${QUESTIONS.length}`;
+    document.getElementById('qText').textContent = q.q;
+
+    const optsEl = document.getElementById('opts');
+    optsEl.innerHTML = '';
+
+    q.opts.forEach((text, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt';
+        btn.innerHTML = `<span class="opt-letter">${LABELS[i]}</span><span class="opt-text">${text}</span>`;
+        btn.addEventListener('click', () => answer(btn, i, q.ok));
+        optsEl.appendChild(btn);
+    });
+
+    updateDots();
+}
+
+function answer(btn, chosen, correct) {
+    if (locked) return;
+    locked = true;
+    document.querySelectorAll('.opt').forEach(b => (b.disabled = true));
+
+    if (chosen === correct) {
+        btn.classList.add('correct');
+        sfxCorrect();
+
+        // Dot bounce
+        const justCompleted = current;
+        current++;
+        updateDots(justCompleted);
+
+        if (current >= QUESTIONS.length) {
+            setTimeout(triggerReveal, 700);
+        } else {
+            setTimeout(() => {
+                locked = false;
+                gsap.to('#qBody', {
+                    opacity: 0, y: -14, duration: .22, ease: 'power2.in',
+                    onComplete: () => {
+                        showQuestion(current);
+                        gsap.fromTo('#qBody', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: .28, ease: 'power2.out' });
+                    }
+                });
+            }, 650);
+        }
+    } else {
+        /* Amarillo + shake + auto-retry */
+        btn.classList.add('wrong');
+        sfxWrong();
+        gsap.to(btn, {
+            keyframes: [
+                { x: -8, duration: .06 },
+                { x:  8, duration: .06 },
+                { x: -5, duration: .05 },
+                { x:  5, duration: .05 },
+                { x:  0, duration: .04 },
+            ]
+        });
+
+        setTimeout(() => {
+            locked = false;
+            gsap.to('#qBody', {
+                opacity: 0, y: -10, duration: .2, ease: 'power1.in',
+                onComplete: () => {
+                    showQuestion(current);
+                    gsap.fromTo('#qBody', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .25 });
+                }
+            });
+        }, 1100);
+    }
+}
+
+/* ══════════════════════════════════════════
+   REVEAL ÉPICO
+══════════════════════════════════════════ */
+document.getElementById('codeEl').textContent = CODIGO;
+
+function triggerReveal() {
+    const revealPage = document.getElementById('revealPage');
+    const card       = document.getElementById('card');
+    const action     = document.getElementById('action');
+
+    gsap.to('#quizPage', {
+        opacity: 0, scale: .96, duration: .45, ease: 'power2.in',
+        onComplete: () => {
+            document.getElementById('quizPage').style.display = 'none';
+            revealPage.classList.add('active');
+
+            gsap.set(card,   { opacity: 0, y: -200, rotationZ: -18, rotationY: 0 });
+            gsap.set(action, { opacity: 0, y: 10 });
+
+            gsap.to(card, {
+                opacity: 1, y: 0, rotationZ: 0,
+                duration: .5, ease: 'power4.out', delay: .1,
+                onComplete: onCardLand,
+            });
+        }
+    });
+}
+
+function onCardLand() {
+    /* Micro-vibración en el page */
+    gsap.to('#revealPage', {
+        keyframes: [
+            { x: -5, y: 3,  duration: .04 },
+            { x:  5, y: -2, duration: .04 },
+            { x: -3, y: 1,  duration: .04 },
+            { x:  0, y: 0,  duration: .03 },
+        ]
+    });
+
+    confetti({
+        particleCount: 80,
+        spread: 90,
+        origin: { x: .5, y: .36 },
+        colors: ['#C9A84C', '#DFC078', '#EDE6D9', '#9A7830'],
+        startVelocity: 32,
+        gravity: .88,
+        scalar: .88,
+        drift: .3,
+    });
+
+    /* Idle sway */
+    gsap.to(card, {
+        rotationZ: 1.5, y: 4,
+        duration: 3.5, ease: 'sine.inOut',
+        yoyo: true, repeat: -1, delay: .4,
+    });
+
+    gsap.to('#action', { opacity: 1, y: 0, duration: .5, delay: .3 });
+}
+
+/* ══════════════════════════════════════════
+   FLIP
+══════════════════════════════════════════ */
+let flipped = false;
+const card  = document.getElementById('card');
+
+function flipCard() {
+    if (flipped) return;
+    flipped = true;
+    card.onclick = null;
+    gsap.killTweensOf(card);
+
+    gsap.timeline()
+        .to(card, { rotationZ: -2, y: -8, duration: .16, ease: 'power1.in' })
+        .to(card, {
+            rotationY: 180, rotationZ: 0, y: 0,
+            duration: .7, ease: 'power2.inOut',
+            onComplete: afterFlip,
+        });
+}
+
+function afterFlip() {
+    const hint  = document.getElementById('hint');
+    const btn   = document.getElementById('copyBtn');
+    const instr = document.getElementById('instructions');
+
+    sfxFlip();
+
+    gsap.to(hint, {
+        opacity: 0, duration: .2,
+        onComplete: () => {
+            hint.style.display = 'none';
+            btn.style.display  = 'block';
+            gsap.fromTo(btn, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' });
+        }
+    });
+
+    confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { x: .5, y: .44 },
+        colors: ['#C9A84C', '#DFC078', '#EDE6D9', '#9A7830'],
+        startVelocity: 20, gravity: .9, scalar: .8,
+    });
+
+    // Instrucciones aparecen después de un momento
+    setTimeout(() => {
+        instr.style.pointerEvents = 'all';
+        gsap.fromTo(instr,
+            { opacity: 0, y: 16 },
+            { opacity: 1, y: 0, duration: .6, ease: 'power2.out' }
+        );
+    }, 700);
+}
+
+/* ══════════════════════════════════════════
+   COPY
+══════════════════════════════════════════ */
+function copyCode() {
+    const done = () => {
+        const b = document.getElementById('copyBtn');
+        b.classList.add('done');
+        b.textContent = 'Copiado';
+        setTimeout(() => { b.classList.remove('done'); b.textContent = 'Copiar código'; }, 2200);
+    };
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(CODIGO).then(done).catch(fallback);
+    } else { fallback(); }
+
+    function fallback() {
+        const el = Object.assign(document.createElement('textarea'), { value: CODIGO });
+        Object.assign(el.style, { position: 'fixed', opacity: '0' });
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        done();
+    }
+}
+
+/* ══════════════════════════════════════════
+   INICIO
+══════════════════════════════════════════ */
+gsap.set('#quizPage', { opacity: 0 });
+gsap.set('#qBody',    { opacity: 0, y: 14 });
+
+showQuestion(0);
+
+gsap.to('#quizPage', { opacity: 1, duration: .6, delay: .3 });
+gsap.to('#qBody',    { opacity: 1, y: 0, duration: .5, delay: .55, ease: 'power2.out' });
+</script>
+</body>
+</html>
